@@ -23,9 +23,11 @@
               <a class="pure-menu-heading" href="/">Table of Contents</a>
 
               <ul class="pure-menu-list">
-                <li class="pure-menu-item">
-                  <a href="#" class="pure-menu-link">Chapter 1</a>
-                </li>
+                <% @contents.each do |title| %>
+                  <li class="pure-menu-item">
+                    <a href="#" class="pure-menu-link"><%= title %></a>
+                  </li>
+                <% end %>
               </ul>
           </div>
       </div>
@@ -38,12 +40,13 @@
 
         <div class="content">
           <h2 class="content-subhead">Table of Contents</h2>
-
           <div class="pure-menu">
             <ul class="pure-menu-list">
-              <li class="pure-menu-item">
-                <a href="#" class="pure-menu-link">Chapter 1</a>
-              </li>
+              <% @contents.each do |title| %>
+                <li class="pure-menu-item">
+                    <a href="#" class="pure-menu-link"><%= title %></a>
+                </li>
+              <% end %>
             </ul>
           </div>
         </div>
