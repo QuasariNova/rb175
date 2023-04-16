@@ -1,6 +1,6 @@
 require 'socket'
 
-def split(request_line)
+def parse_request(request_line)
   http_method, path_and_params, _ = request_line.split
 
   path, param_strs = path_and_params.split '?'
@@ -21,7 +21,7 @@ loop do
   next if !request_line || request_line =~ /favicon/
   puts request_line
 
-  http_method, path, params = split(request_line)
+  http_method, path, params = parse_request(request_line)
 
   client.puts "HTTP/1.1 200 OK"
   client.puts "Content-Type: text/plain\r\n\r\n"
