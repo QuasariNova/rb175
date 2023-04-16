@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Directory</title>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <h1>Directory</h1>
+    <ul>
+      <% method = params[:reverse] ? :reverse_each : :each %>
+      <% @files.send(method) do |file| %>
+        <li>
+          <%= "<a href=\"/#{file}\"> #{file} </a>" %>
+        </li>
+      <% end %>
+    </ul>
+    <% if params[:reverse] %>
+      <a href="/">Sort ascending</a>
+    <% else %>
+      <a href="/?reverse=true">Sort descending</a>
+    <% end %>
+  </body>
+</html>
