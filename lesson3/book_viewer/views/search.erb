@@ -11,11 +11,16 @@
   <% else %>
     <h2 class="content-subhead">Results for '<%= params['query'] %>'</h2>
     <ul>
-      <% @results.each do |title| %>
+      <% @results.each do |chapter| %>
         <li>
-          <a href="/chapters/<%= @contents.index(title) + 1%>">
-            <%= title %>
-          </a>
+          <h4><%= chapter[:name] %></h4>
+          <ul>
+            <% chapter[:paragraphs].each do |paragraph| %>
+              <li>
+                <a href="/chapters/<%= chapter[:number] %>#<%= paragraph[:id] %>"><%= highlight paragraph[:content], params['query'] %></a>
+              </li>
+            <% end%>
+          </ul>
         </li>
       <% end %>
     </ul>

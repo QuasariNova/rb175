@@ -23,14 +23,7 @@ get "/chapters/:number" do
 end
 
 get "/search" do
-  if params['query']
-    query = Regexp.new(params['query'])
-
-    @results = @contents.select.with_index do |_, idx|
-      chapter = File.read "data/chp#{idx+1}.txt"
-      chapter =~ query
-    end
-  end
+  @results = chapters_matching params['query']
 
   erb :search
 end
@@ -41,8 +34,40 @@ end
 
 helpers do
   def in_paragraphs(text)
-    text.split("\n\n").map do |paragraph|
-      "<p>#{paragraph}</p>"
+    text.split("\n\n").map.with_index do |paragraph, idx|
+      "<p id='par#{idx + 1}'>#{paragraph}</p>"
     end.join "\n\n"
   end
+
+  def highlight(text, term)
+    text.gsub term, "<strong>#{term}</strong>"
+  end
+end
+
+def each_chapter
+  @contents.each_with_index do |name, index|
+    number = index + 1
+    contents = File.read("data/chp#{number}.txt")
+    yield number, name, contents
+  end
+end
+
+def chapters_matching(query)
+  return nil if !query || query.empty?
+  results = []
+  query = Regexp.new query
+
+  each_chapter do |number, name, contents|
+    matches = []
+
+    contents.split("\n\n").each_with_index do |paragraph, idx|
+      next unless paragraph =~ query
+      matches << { id: "par#{idx + 1}", content: paragraph}
+    end
+
+    next unless matches.any?
+    results << { number: number, name: name, paragraphs: matches }
+  end
+
+  results
 end
