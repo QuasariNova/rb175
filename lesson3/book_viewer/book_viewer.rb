@@ -8,7 +8,7 @@ get "/" do
   erb :home
 end
 
-get "/chapters/1/" do
+get "/chapters/1" do
   @title = 'Chapter 1'
   @contents = File.readlines 'data/toc.txt'
   @chapter = File.read 'data/chp1.txt'
