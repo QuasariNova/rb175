@@ -1,0 +1,17 @@
+<dl>
+  <dt>Email:</dt>
+  <dd><%= @email %></dd>
+
+  <dt>Interests</dd>
+  <dd><%= @interests.join ', ' %>
+</dl>
+
+<h2>Other Users:</h2>
+<ul>
+  <% @users.each_key do |user| %>
+    <% next if user == @key %>
+    <li>
+      <a href="/users/<%= user.to_s %>"><%= user.to_s %></a>
+    </li>
+  <% end %>
+</ul>
