@@ -22,6 +22,19 @@ get "/chapters/:number" do
   erb :chapter
 end
 
+get "/search" do
+  if params['query']
+    query = Regexp.new(params['query'])
+
+    @results = @contents.select.with_index do |_, idx|
+      chapter = File.read "data/chp#{idx+1}.txt"
+      chapter =~ query
+    end
+  end
+
+  erb :search
+end
+
 not_found do
   redirect '/'
 end
