@@ -5,7 +5,8 @@ require "tilt/erubis"
 
 configure do
   enable :sessions
-  set :session_secret, 'secretsecretsecretsecretsecretsecretsecretsecretsecretsecretsecr'
+  set :session_secret,
+      'secretsecretsecretsecretsecretsecretsecretsecretsecretsecretsecr'
 end
 
 before do
@@ -29,7 +30,9 @@ end
 
 # Verifies if a list_name is valid. If not, it will render render_on_error,
 # otherwise it executes the block passed to it.
-def validate_list_name(list_name, render_on_error)
+def validate_list_name(render_on_error=:new_list)
+  list_name = params[:list_name].strip
+
   if !(1..100).cover? list_name.size
     session[:error] = "List name must be between 1 and 100 characters"
   elsif session[:lists].any? { |list| list[:name] == list_name }
@@ -37,58 +40,52 @@ def validate_list_name(list_name, render_on_error)
   end
   return erb render_on_error if session[:error]
 
-  yield
+  yield list_name
 end
 
 # Create a new list
 post '/lists' do
   list_name = params[:list_name].strip
 
-  validate_list_name list_name, :new_list do
-    session[:lists] << {name: list_name, todos: []}
+  validate_list_name do |list_name|
+    session[:lists] << { name: list_name, todos: [] }
     session[:success] = "The list has been created."
     redirect '/lists'
   end
 end
 
-# Checks if list_id is valid. If its not, it redirects, otherwise it runs the block
-# passed to it.
-def validate_list_id(list_id)
+# Checks if list_id is valid. If its not, it redirects, otherwise it runs the
+# block passed to it.
+def validate_list
+  list_id = params[:list_id].to_i
+
   unless (0...session[:lists].size).cover? list_id
     session[:error] = "List does not exist."
+    return redirect '/lists'
   end
-  return redirect '/lists' if session[:error]
 
-  yield
+  @list = session[:lists][list_id]
+  yield list_id
 end
 
 # Renders a todo list
 get '/lists/:list_id' do
-  list_id = params[:list_id].to_i
-  validate_list_id list_id do
-    @list = session[:lists][list_id]
+  validate_list do
     erb :list
   end
 end
 
 # Edit Existing Todo List
 get '/lists/:list_id/edit' do
-  list_id = params[:list_id].to_i
-  validate_list_id list_id do
-    @list = session[:lists][list_id]
+  validate_list do
     erb :edit_list
   end
 end
 
 # Update Existing Todo List
 post '/lists/:list_id' do
-  list_id = params[:list_id].to_i
-
-  validate_list_id list_id do
-    @list = session[:lists][list_id]
-    list_name = params[:list_name].strip
-
-    validate_list_name list_name, :edit_list do
+  validate_list do |list_id|
+    validate_list_name :edit_list do |list_name|
       @list[:name] = list_name
       session[:success] = "The list has been updated."
       redirect "/lists/#{list_id}"
@@ -98,9 +95,7 @@ end
 
 # Delete Existing Todo List
 post '/lists/:list_id/delete' do
-  list_id = params[:list_id].to_i
-
-  validate_list_id list_id do
+  validate_list do |list_id|
     session[:lists].delete_at list_id
     session[:success] = "The list has been removed."
 
@@ -108,7 +103,11 @@ post '/lists/:list_id/delete' do
   end
 end
 
-def validate_todo_name(todo_name)
+# Checks if a todo_name is valid for @list. Renders the :list view if not,
+# otherwise yields to the given block
+def validate_todo_name
+  todo_name = params[:todo].strip
+
   if !(1..100).cover? todo_name.size
     session[:error] = "Todo name must be between 1 and 100 characters"
   elsif @list[:todos].any? { |todo| todo[:name] == todo_name }
@@ -116,19 +115,14 @@ def validate_todo_name(todo_name)
   end
   return erb :list if session[:error]
 
-  yield
+  yield todo_name
 end
 
 # Add Todo to List
 post '/lists/:list_id/todos' do
-  list_id = params[:list_id].to_i
-
-  validate_list_id list_id do
-    todo = params[:todo].strip
-    @list = session[:lists][list_id]
-
-    validate_todo_name todo do
-      @list[:todos] << {name: todo, completed: false}
+  validate_list do |list_id|
+    validate_todo_name do |todo|
+      @list[:todos] << { name: todo, completed: false }
       session[:success] = "Todo added to list."
 
       redirect "/lists/#{list_id}"
@@ -136,26 +130,63 @@ post '/lists/:list_id/todos' do
   end
 end
 
-def validate_todo_id(todo_id)
+# Checks if a todo_id is valid for @list. Renders the :list view if not,
+# otherwise yields to the given block
+def validate_todo_id
+  todo_id = params[:todo_id].to_i
+
   unless (0...@list[:todos].size).cover? todo_id
     session[:error] = "Todo does not exist"
   end
   return erb :list if session[:error]
 
-  yield
+  yield todo_id
 end
 
+# Deletes a todo from a list
 post '/lists/:list_id/todos/:todo_id/delete' do
-  list_id = params[:list_id].to_i
-
-  validate_list_id list_id do
-    @list = session[:lists][list_id]
-    todo_id = params[:todo_id].to_i
-
-    validate_todo_id todo_id do
+  validate_list do |list_id|
+    validate_todo_id do |todo_id|
       @list[:todos].delete_at todo_id
       session[:success] = "The todo has been removed."
+
       redirect "/lists/#{params[:list_id]}"
     end
+  end
+end
+
+# Marks all todos complete
+post '/lists/:list_id/todos/all' do
+  validate_list do |list_id|
+    @list[:todos].each { |todo| todo[:completed] = true }
+
+    session[:success] = 'The list has been updated'
+
+    redirect "lists/#{params[:list_id]}"
+  end
+end
+
+# Toggles individual todo
+post '/lists/:list_id/todos/:todo_id' do
+  validate_list do |list_id|
+    validate_todo_id do |todo_id|
+      is_completed = params[:completed] == 'true'
+      @list[:todos][todo_id][:completed] = is_completed
+      session[:success] = 'The todo has been updated'
+
+      redirect "/lists/#{params[:list_id]}"
+    end
+  end
+end
+
+
+helpers do
+  def all_todos_completed?(list = nil)
+    list ||= @list
+    list[:todos].all? { |todo| todo[:completed] }
+  end
+
+  def not_complete_todo_count(list)
+    list[:todos].count { |todo| !todo[:completed] }
   end
 end
