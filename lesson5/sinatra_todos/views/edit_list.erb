@@ -1,0 +1,14 @@
+<form action="/lists/<%= params[:id] %>" method="post">
+  <dl>
+    <dt>
+      <label for="list_name">Enter the new name for <%= @list[:name] %></label>
+    </dt>
+    <dd>
+      <input name="list_name" id="list_name" placeholder="List Name" type="text" autocomplete="off" value="<%= params[:list_name] || @list[:name]%>">
+    </dd>
+  </dl>
+  <fieldset class="actions">
+    <input type="submit" value="Save">
+    <a href="/lists/<%= params[:id] %>">Cancel</a>
+  </fieldset>
+</form>
