@@ -1,4 +1,4 @@
-<section id="todos" <%= 'class="complete"' if @list[:todos].size > 0 && all_todos_completed? %>>
+<section id="todos" class="<%= list_class %>">
   <header>
     <h2><%= @list[:name] %></h2>
     <ul>

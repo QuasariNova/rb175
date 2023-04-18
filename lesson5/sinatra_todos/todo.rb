@@ -181,12 +181,21 @@ end
 
 
 helpers do
-  def all_todos_completed?(list = nil)
+  def list_complete?(list = nil)
     list ||= @list
-    list[:todos].all? { |todo| todo[:completed] }
+    !todos_count(list).zero? && todos_remaining_count(list).zero?
   end
 
-  def not_complete_todo_count(list)
+  def list_class(list = nil)
+    list ||= @list
+    "complete" if list_complete? list
+  end
+
+  def todos_remaining_count(list)
     list[:todos].count { |todo| !todo[:completed] }
+  end
+
+  def todos_count(list)
+    list[:todos].size
   end
 end
