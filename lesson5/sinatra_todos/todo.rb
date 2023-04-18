@@ -27,76 +27,91 @@ get '/lists/new' do
   erb :new_list
 end
 
-# Return an error message if the name is invalid. Return nil if name is valid
-def list_name_error(list_name)
+def verify_list_name(list_name)
   if !(1..100).cover? list_name.size
-    return "List name must be between 1 and 100 characters"
+    session[:error] = "List name must be between 1 and 100 characters"
   elsif session[:lists].any? { |list| list[:name] == list_name }
-    return "List name must be unique"
+    session[:error] = "List name must be unique"
   end
+  success = !session[:error]
+
+  puts session[:error]
+  yield success
 end
 
 # Create a new list
 post '/lists' do
   list_name = params[:list_name].strip
 
-  error = list_name_error(list_name)
-  if error
-    session[:error] = error
-    return erb :new_list
-  end
+  verify_list_name list_name do |success|
+    return erb :new_list unless success
 
-  session[:lists] << {name: list_name, todos: []}
-  session[:success] = "The list has been created."
-  redirect '/lists'
+    session[:lists] << {name: list_name, todos: []}
+    session[:success] = "The list has been created."
+    redirect '/lists'
+  end
 end
 
-def valid_id?(id)
-  (0...session[:lists].size).cover? id
+def verify_id(id)
+  unless (0...session[:lists].size).cover? id
+    session[:error] = "List does not exist."
+  end
+  success = !session[:error]
+
+  yield success
 end
 
 # Renders a todo list
 get '/lists/:id' do
   id = params[:id].to_i
-  unless valid_id? id
-    session[:error] = "List does not exist."
-    return redirect '/lists'
-  end
+  verify_id id do |success|
+    return redirect '/lists' unless success
 
-  @list = session[:lists][id]
-  erb :list
+    @list = session[:lists][id]
+    erb :list
+  end
 end
 
 # Edit Existing Todo List
 get '/lists/:id/edit' do
   id = params[:id].to_i
-  unless valid_id? id
-    session[:error] = "List does not exist."
-    return redirect '/lists'
-  end
+  verify_id id do |success|
+    return redirect '/lists' unless success
 
-  @list = session[:lists][id]
-  erb :edit_list
+    @list = session[:lists][id]
+    erb :edit_list
+  end
 end
 
 # Update Existing Todo List
 post '/lists/:id' do
   id = params[:id].to_i
-  unless valid_id? id
-    session[:error] = "List does not exist."
-    return redirect '/lists'
+
+  verify_id id do |success|
+    return redirect '/lists' unless success
+
+    @list = session[:lists][id]
+    list_name = params[:list_name].strip
+    verify_list_name list_name do |success|
+      return erb :edit_list unless  success
+
+      @list[:name] = list_name
+      session[:success] = "The list has been updated."
+      redirect "/lists/#{id}"
+    end
   end
+end
 
-  @list = session[:lists][id]
-  list_name = params[:list_name].strip
+# Delete Existing Todo List
+post '/lists/:id/delete' do
+  id = params[:id].to_i
 
-  error = list_name_error(list_name)
-  if error
-    session[:error] = error
-    return erb :edit_list
+  verify_id id do |success|
+    if success
+      session[:lists].delete_at id
+      session[:success] = "The list has been removed."
+    end
+
+    redirect "/lists"
   end
-
-  @list[:name] = list_name
-  session[:success] = "The list has been updated."
-  redirect "/lists/#{id}"
 end
