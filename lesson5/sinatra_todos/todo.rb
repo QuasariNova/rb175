@@ -27,46 +27,45 @@ get '/lists/new' do
   erb :new_list
 end
 
-def verify_list_name(list_name)
+# Verifies if a list_name is valid. If not, it will render render_on_error,
+# otherwise it executes the block passed to it.
+def verify_list_name(list_name, render_on_error)
   if !(1..100).cover? list_name.size
     session[:error] = "List name must be between 1 and 100 characters"
   elsif session[:lists].any? { |list| list[:name] == list_name }
     session[:error] = "List name must be unique"
   end
-  success = !session[:error]
+  return erb render_on_error if session[:error]
 
-  puts session[:error]
-  yield success
+  yield
 end
 
 # Create a new list
 post '/lists' do
   list_name = params[:list_name].strip
 
-  verify_list_name list_name do |success|
-    return erb :new_list unless success
-
+  verify_list_name list_name, :new_list do
     session[:lists] << {name: list_name, todos: []}
     session[:success] = "The list has been created."
     redirect '/lists'
   end
 end
 
+# Checks if id is valid. If its not, it redirects, otherwise it runs the block
+# passed to it.
 def verify_id(id)
   unless (0...session[:lists].size).cover? id
     session[:error] = "List does not exist."
   end
-  success = !session[:error]
+  return redirect '/lists' if session[:error]
 
-  yield success
+  yield
 end
 
 # Renders a todo list
 get '/lists/:id' do
   id = params[:id].to_i
-  verify_id id do |success|
-    return redirect '/lists' unless success
-
+  verify_id id do
     @list = session[:lists][id]
     erb :list
   end
@@ -75,9 +74,7 @@ end
 # Edit Existing Todo List
 get '/lists/:id/edit' do
   id = params[:id].to_i
-  verify_id id do |success|
-    return redirect '/lists' unless success
-
+  verify_id id do
     @list = session[:lists][id]
     erb :edit_list
   end
@@ -87,14 +84,11 @@ end
 post '/lists/:id' do
   id = params[:id].to_i
 
-  verify_id id do |success|
-    return redirect '/lists' unless success
-
+  verify_id id do
     @list = session[:lists][id]
     list_name = params[:list_name].strip
-    verify_list_name list_name do |success|
-      return erb :edit_list unless  success
 
+    verify_list_name list_name, :edit_list do
       @list[:name] = list_name
       session[:success] = "The list has been updated."
       redirect "/lists/#{id}"
@@ -106,11 +100,9 @@ end
 post '/lists/:id/delete' do
   id = params[:id].to_i
 
-  verify_id id do |success|
-    if success
-      session[:lists].delete_at id
-      session[:success] = "The list has been removed."
-    end
+  verify_id id do
+    session[:lists].delete_at id
+    session[:success] = "The list has been removed."
 
     redirect "/lists"
   end
