@@ -5,19 +5,27 @@
       <li><a class="edit" href="/lists/<%= params[:id] %>/edit">Edit List</a></li>
     </ul>
   </header>
+
+  <ul>
+    <% @list[:todos].each_with_index do |todo, idx| %>
+      <li>
+        <h3><%= todo[:name] %></h3>
+      </li>
+    <% end %>
+  </ul>
 </section>
 
 <% content_for :header_links do %>
   <a href="/lists">All Lists</a>
 <% end %>
 
-<form action="/lists/<%= params[:id] %>/new" method="post">
+<form action="/lists/<%= params[:id] %>/todos" method="post">
   <dl>
     <dt>
-      <label for="new_todo">Enter a new todo item:</label>
+      <label for="todo">Enter a new todo item:</label>
     </dt>
     <dd>
-      <input name="new_todo" id="new_todo" type="text" autocomplete="off" placeholder="Todo text">
+      <input name="todo" id="todo" type="text" autocomplete="off" placeholder="Todo text" value="<%= params[:todo] %>">
     </dd>
     </dl>
   <fieldset class="actions">
