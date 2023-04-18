@@ -49,3 +49,15 @@ post '/lists' do
     redirect '/lists'
   end
 end
+
+# Renders a todo list
+get '/lists/:id' do
+  @id = params[:id].to_i
+  if @id >= session[:lists].size
+    session[:error] = "List does not exist."
+    redirect '/lists'
+  elsif
+    @list = session[:lists][@id]
+    erb :list
+  end
+end
