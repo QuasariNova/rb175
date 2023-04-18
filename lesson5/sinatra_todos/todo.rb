@@ -53,8 +53,8 @@ end
 
 # Checks if list_id is valid. If its not, it redirects, otherwise it runs the block
 # passed to it.
-def validate_list_id(id)
-  unless (0...session[:lists].size).cover? id
+def validate_list_id(list_id)
+  unless (0...session[:lists].size).cover? list_id
     session[:error] = "List does not exist."
   end
   return redirect '/lists' if session[:error]
@@ -66,7 +66,7 @@ end
 get '/lists/:list_id' do
   list_id = params[:list_id].to_i
   validate_list_id list_id do
-    @list = session[:lists][id]
+    @list = session[:lists][list_id]
     erb :list
   end
 end
@@ -75,7 +75,7 @@ end
 get '/lists/:list_id/edit' do
   list_id = params[:list_id].to_i
   validate_list_id list_id do
-    @list = session[:lists][id]
+    @list = session[:lists][list_id]
     erb :edit_list
   end
 end
@@ -85,13 +85,13 @@ post '/lists/:list_id' do
   list_id = params[:list_id].to_i
 
   validate_list_id list_id do
-    @list = session[:lists][id]
+    @list = session[:lists][list_id]
     list_name = params[:list_name].strip
 
     validate_list_name list_name, :edit_list do
       @list[:name] = list_name
       session[:success] = "The list has been updated."
-      redirect "/lists/#{id}"
+      redirect "/lists/#{list_id}"
     end
   end
 end
@@ -101,7 +101,7 @@ post '/lists/:list_id/delete' do
   list_id = params[:list_id].to_i
 
   validate_list_id list_id do
-    session[:lists].delete_at id
+    session[:lists].delete_at list_id
     session[:success] = "The list has been removed."
 
     redirect '/lists'
@@ -118,19 +118,20 @@ def validate_todo_name(todo_name)
 
   yield
 end
+
 # Add Todo to List
 post '/lists/:list_id/todos' do
   list_id = params[:list_id].to_i
 
   validate_list_id list_id do
     todo = params[:todo].strip
-    @list = session[:lists][id]
+    @list = session[:lists][list_id]
 
     validate_todo_name todo do
       @list[:todos] << {name: todo, completed: false}
       session[:success] = "Todo added to list."
 
-      redirect "/lists/#{id}"
+      redirect "/lists/#{list_id}"
     end
   end
 end
@@ -148,7 +149,7 @@ post '/lists/:list_id/todos/:todo_id/delete' do
   list_id = params[:list_id].to_i
 
   validate_list_id list_id do
-    @list = session[:lists][id]
+    @list = session[:lists][list_id]
     todo_id = params[:todo_id].to_i
 
     validate_todo_id todo_id do
