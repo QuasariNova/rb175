@@ -4,3 +4,6 @@ gem "sinatra"
 gem "sinatra-contrib"
 gem "webrick"
 gem "erubis"
+
+gem 'minitest'
+gem 'rack-test'
