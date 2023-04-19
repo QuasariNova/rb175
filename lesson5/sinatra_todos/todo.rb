@@ -179,6 +179,13 @@ post '/lists/:list_id/todos/:todo_id' do
   end
 end
 
+# Used by view helpers to sort our todos and lists
+def sorted_each(collection, sort_by_proc)
+  complete, incomplete = collection.partition &sort_by_proc
+
+  incomplete.each { |element| yield element, collection.index(element) }
+  complete.each { |element| yield element, collection.index(element) }
+end
 
 helpers do
   def list_complete?(list = nil)
@@ -197,5 +204,17 @@ helpers do
 
   def todos_count(list)
     list[:todos].size
+  end
+
+  def each_sorted_list(&block)
+    sort_by_proc = proc { |list| list_complete? list }
+
+    sorted_each @lists, sort_by_proc, &block
+  end
+
+  def each_sorted_todo(todos, &block)
+    sort_by_proc = proc { |todo| todo[:completed] }
+
+    sorted_each todos, sort_by_proc, &block
   end
 end
