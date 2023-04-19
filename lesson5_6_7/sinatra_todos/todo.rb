@@ -32,12 +32,18 @@ get '/lists/new' do
   erb :new_list
 end
 
+def next_id list
+  max = list.map { |hash| hash[:id] }.max || 0
+  max + 1
+end
+
 # Create a new list
 post '/lists' do
   list_name = params[:list_name].strip
 
   validate_list_name do |list_name|
-    session[:lists] << { name: list_name, todos: [] }
+    id = next_id session[:lists]
+    session[:lists] << { name: list_name, todos: [], id: id }
     session[:success] = "The list has been created."
     redirect '/lists'
   end
@@ -45,7 +51,7 @@ end
 
 # Renders a todo list
 get '/lists/:list_id' do
-  validate_list do
+  validate_list do |list_id|
     erb :list
   end
 end
@@ -86,7 +92,9 @@ end
 post '/lists/:list_id/todos' do
   validate_list do |list_id|
     validate_todo_name do |todo|
-      @list[:todos] << { name: todo, completed: false }
+      id = next_id @list[:todos]
+
+      @list[:todos] << { id: id, name: todo, completed: false }
       session[:success] = "Todo added to list."
 
       redirect "/lists/#{list_id}"
@@ -97,8 +105,8 @@ end
 # Deletes a todo from a list
 post '/lists/:list_id/todos/:todo_id/delete' do
   validate_list do |list_id|
-    validate_todo do |todo_id|
-      @list[:todos].delete_at todo_id
+    validate_todo do |todo|
+      @list[:todos].delete todo
 
       if env['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest'
         status 204
@@ -124,9 +132,9 @@ end
 # Toggles individual todo
 post '/lists/:list_id/todos/:todo_id' do
   validate_list do |list_id|
-    validate_todo do |todo_id|
+    validate_todo do |todo|
       is_completed = params[:completed] == 'true'
-      @list[:todos][todo_id][:completed] = is_completed
+      todo[:completed] = is_completed
       session[:success] = 'The todo has been updated'
 
       redirect "/lists/#{params[:list_id]}"
@@ -138,8 +146,8 @@ end
 def sorted_each(collection, sort_by_proc)
   complete, incomplete = collection.partition &sort_by_proc
 
-  incomplete.each { |element| yield element, collection.index(element) }
-  complete.each { |element| yield element, collection.index(element) }
+  incomplete.each { |element| yield element, element[:id] }
+  complete.each { |element| yield element, element[:id] }
 end
 
 helpers do

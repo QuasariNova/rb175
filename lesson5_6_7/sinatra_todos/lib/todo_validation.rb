@@ -35,17 +35,21 @@ module TodoValidation
     int_id
   end
 
+  def find_item_by_id(collection, id)
+    collection.find { |hash| hash[:id] == id}
+  end
+
   # Checks if list_id is valid. If its not, it redirects, otherwise it runs the
   # block passed to it.
   def validate_list
     list_id = id_to_i params[:list_id]
 
-    unless (0...session[:lists].size).cover? list_id
+    @list = find_item_by_id session[:lists], list_id
+    unless @list
       session[:error] = "The specified list does not exist."
       return redirect '/lists'
     end
 
-    @list = session[:lists][list_id]
     yield list_id
   end
 
@@ -54,11 +58,12 @@ module TodoValidation
   def validate_todo
     todo_id = params[:todo_id].to_i
 
-    unless (0...@list[:todos].size).cover? todo_id
+    todo = find_item_by_id @list[:todos], todo_id
+    unless todo
       session[:error] = "The specified todo does not exist."
+      return erb :list if session[:error]
     end
-    return erb :list if session[:error]
 
-    yield todo_id
+    yield todo
   end
 end
