@@ -7,6 +7,7 @@ configure do
   enable :sessions
   set :session_secret,
       'secretsecretsecretsecretsecretsecretsecretsecretsecretsecretsecr'
+  set :erb, :escape_html => true
 end
 
 before do
@@ -196,6 +197,10 @@ helpers do
   def list_class(list = nil)
     list ||= @list
     "complete" if list_complete? list
+  end
+
+  def todo_class(todo)
+    "complete" if todo[:completed]
   end
 
   def todos_remaining_count(list)
