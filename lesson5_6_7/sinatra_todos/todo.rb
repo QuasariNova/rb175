@@ -72,9 +72,13 @@ end
 post '/lists/:list_id/delete' do
   validate_list do |list_id|
     session[:lists].delete_at list_id
-    session[:success] = "The list has been removed."
 
-    redirect '/lists'
+    if env['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest'
+      "/lists"
+    else
+      session[:success] = "The list has been removed."
+      redirect '/lists'
+    end
   end
 end
 
@@ -95,9 +99,13 @@ post '/lists/:list_id/todos/:todo_id/delete' do
   validate_list do |list_id|
     validate_todo do |todo_id|
       @list[:todos].delete_at todo_id
-      session[:success] = "The todo has been removed."
 
-      redirect "/lists/#{params[:list_id]}"
+      if env['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest'
+        status 204
+      else
+        session[:success] = "The todo has been removed."
+        redirect "/lists/#{params[:list_id]}"
+      end
     end
   end
 end
