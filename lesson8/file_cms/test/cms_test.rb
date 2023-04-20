@@ -32,4 +32,16 @@ class CMSTest < Minitest::Test
       assert_equal contents, last_response.body
     end
   end
+
+  def test_no_file
+    get '/no-file'
+    assert_equal 302, last_response.status
+
+    path = last_response['Location']
+    get path
+    assert_includes last_response.body, "no-file does not exist."
+
+    get path
+    refute_includes last_response.body, "no-file does not exist."
+  end
 end

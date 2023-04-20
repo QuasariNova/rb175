@@ -5,6 +5,9 @@
     <meta charset="utf-8">
   </head>
   <body>
+  <% if session[:error] %>
+    <p><%= session.delete :error %></p>
+  <% end %>
     <ul>
     <% @files.each do |file| %>
       <li>
