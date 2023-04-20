@@ -5,5 +5,7 @@ gem "sinatra-contrib"
 gem "webrick"
 gem "erubis"
 
+gem 'redcarpet'
+
 gem 'minitest'
 gem 'rack-test'
