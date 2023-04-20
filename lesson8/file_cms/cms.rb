@@ -35,12 +35,33 @@ def load_file_content(path)
   end
 end
 
-get '/:filename' do
-  file_name = params[:filename]
-  unless @files.include? file_name
-    session[:error] = "#{file_name} does not exist."
+def validate_filename
+  filename = params[:filename]
+  unless @files.include? filename
+    session[:message] = "#{filename} does not exist."
     redirect '/'
   end
+  filename
+end
 
-  load_file_content "#{root}/data/#{file_name}"
+get '/:filename' do
+  filename = validate_filename
+
+  load_file_content "#{root}/data/#{filename}"
+end
+
+get '/:filename/edit' do
+  filename = validate_filename
+
+  @content = File.read "#{root}/data/#{filename}"
+  erb :edit
+end
+
+post '/:filename' do
+  filename = validate_filename
+
+  content = params[:content]
+  File.write "#{root}/data/#{filename}", content
+  session[:message] = "#{filename} has been updated."
+  redirect '/'
 end

@@ -52,4 +52,25 @@ class CMSTest < Minitest::Test
     get path
     refute_includes last_response.body, "no-file does not exist."
   end
+
+  def test_edit
+    get '/changes.txt/edit'
+
+    assert_equal 200, last_response.status
+    assert_equal 'text/html;charset=utf-8', last_response['Content-Type']
+    assert_includes last_response.body, '<textarea'
+  end
+
+  def test_modify
+    post '/changes.txt', content: "File has changed"
+
+    assert_equal 302, last_response.status
+
+    get last_response['Location']
+    assert_includes last_response.body, "changes.txt has been updated."
+
+    get '/changes.txt'
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, "File has changed"
+  end
 end
