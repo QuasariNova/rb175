@@ -12,33 +12,48 @@ class CMSTest < Minitest::Test
     Sinatra::Application
   end
 
+  def setup
+    FileUtils.mkdir_p(data_path)
+  end
+
+  def teardown
+    FileUtils.rm_rf(data_path)
+  end
+
+  def create_document(name, content = "")
+    File.open File.join(data_path, name), 'w' do |file|
+      file.write content
+    end
+  end
+
   def test_index
+    create_document 'about.md'
+    create_document 'changes.txt'
+
     get '/'
     assert_equal 200, last_response.status
     assert_equal 'text/html;charset=utf-8', last_response['Content-Type']
     assert_includes last_response.body, "about.md"
     assert_includes last_response.body, "changes.txt"
-    assert_includes last_response.body, "history.txt"
   end
 
   def test_files
-    root = File.expand_path "..", __FILE__
-    ['/changes.txt', '/history.txt'].each do |path|
-      get path
-      assert_equal 200, last_response.status
-      assert_equal 'text/plain', last_response['Content-Type']
+    create_document 'changes.txt', 'I am change'
 
-      contents = File.read "#{root}/../data#{path}"
-      assert_equal contents, last_response.body
-    end
+    get '/changes.txt'
+
+    assert_equal 200, last_response.status
+    assert_equal 'text/plain', last_response['Content-Type']
+    assert_includes last_response.body, 'I am change'
   end
 
   def test_markdown
+    create_document 'about.md', '# Ruby is...'
     get '/about.md'
 
     assert_equal 200, last_response.status
     assert_equal 'text/html;charset=utf-8', last_response['Content-Type']
-    assert_includes last_response.body, "<h1>Ruby is...</h1>"
+    assert_includes last_response.body, '<h1>Ruby is...</h1>'
   end
 
   def test_no_file
@@ -47,10 +62,10 @@ class CMSTest < Minitest::Test
 
     path = last_response['Location']
     get path
-    assert_includes last_response.body, "no-file does not exist."
+    assert_includes last_response.body, 'no-file does not exist.'
 
     get path
-    refute_includes last_response.body, "no-file does not exist."
+    refute_includes last_response.body, 'no-file does not exist.'
   end
 
   def test_edit
@@ -62,6 +77,7 @@ class CMSTest < Minitest::Test
   end
 
   def test_modify
+    create_document 'changes.txt'
     post '/changes.txt', content: "File has changed"
 
     assert_equal 302, last_response.status
