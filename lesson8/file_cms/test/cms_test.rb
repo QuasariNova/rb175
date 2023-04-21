@@ -191,18 +191,18 @@ class CMSTest < Minitest::Test
   end
 
   def test_signin_valid
-    post '/users/signin', username: 'admin', password: 'secret'
+    post '/users/signin', username: 'developer', password: 'letmein'
 
     assert_equal 'Welcome!', session[:message]
-    assert_equal 'admin', session[:username]
+    assert_equal 'developer', session[:username]
 
     get last_response['Location']
-    assert_includes last_response.body, 'Signed in as admin.'
+    assert_includes last_response.body, 'Signed in as developer.'
   end
 
   def test_signout
-    get '/', {}, {"rack.session" => {username: "admin"}}
-    assert_includes last_response.body, 'Signed in as admin.'
+    get '/', {}, { "rack.session" => { username: "developer" } }
+    assert_includes last_response.body, 'Signed in as developer.'
 
     post '/users/signout'
     assert_equal 'You have been signed out.', session[:message]

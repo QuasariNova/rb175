@@ -5,14 +5,12 @@ require "redcarpet"
 
 require_relative 'lib/helpers'
 
-# rubocop:disable Style::ExpandPathArguments
 def data_path
   if ENV["RACK_ENV"] == "test"
     return File.expand_path '../test/data', __FILE__
   end
   File.expand_path '../data', __FILE__
 end
-# rubocop:enable Style::ExpandPathArguments
 
 configure do
   enable :sessions
@@ -97,8 +95,7 @@ post '/users/signin' do
   redirect '/' if session[:username]
 
   @username = params['username']
-  password = params['password']
-  unless @username == 'admin' && password == 'secret'
+  unless authenticate_user? @username, params['password']
     status 422
     session[:message] = 'Invalid credentials.'
     return erb :signin
