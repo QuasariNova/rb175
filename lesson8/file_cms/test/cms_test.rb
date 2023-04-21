@@ -69,6 +69,7 @@ class CMSTest < Minitest::Test
   end
 
   def test_edit
+    create_document 'changes.txt'
     get '/changes.txt/edit'
 
     assert_equal 200, last_response.status
@@ -77,7 +78,6 @@ class CMSTest < Minitest::Test
   end
 
   def test_modify
-    create_document 'changes.txt'
     post '/changes.txt', content: "File has changed"
 
     assert_equal 302, last_response.status

@@ -38,7 +38,7 @@ def load_file_content(path)
     headers['Content-Type'] = 'text/plain'
     content
   when '.md'
-    render_markdown content
+    erb render_markdown(content)
   end
 end
 
@@ -65,7 +65,7 @@ get '/:filename/edit' do
 end
 
 post '/:filename' do
-  filename = validate_filename
+  filename = params[:filename]
 
   content = params[:content]
   File.write "#{data_path}/#{filename}", content
