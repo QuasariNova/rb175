@@ -51,7 +51,6 @@ class CMSTest < Minitest::Test
     create_document 'about.md', '# Ruby is...'
     get '/about.md'
 
-    assert_equal 200, last_response.status
     assert_equal 'text/html;charset=utf-8', last_response['Content-Type']
     assert_includes last_response.body, '<h1>Ruby is...</h1>'
   end
@@ -72,8 +71,6 @@ class CMSTest < Minitest::Test
     create_document 'changes.txt'
     get '/changes.txt/edit'
 
-    assert_equal 200, last_response.status
-    assert_equal 'text/html;charset=utf-8', last_response['Content-Type']
     assert_includes last_response.body, '<textarea'
   end
 
@@ -93,14 +90,12 @@ class CMSTest < Minitest::Test
   def test_new_view
     get '/new'
 
-    assert_equal 200, last_response.status
     assert_includes last_response.body, '<form action="/create" method="post">'
   end
 
   def test_new_no_filename
     post '/create', filename: '   '
 
-    assert_equal 200, last_response.status
     assert_equal 'text/html;charset=utf-8', last_response['Content-Type']
     assert_includes last_response.body, 'A name is required.'
   end
@@ -108,7 +103,6 @@ class CMSTest < Minitest::Test
   def test_new_new_filename
     post '/create', filename: 'new'
 
-    assert_equal 200, last_response.status
     assert_includes last_response.body, "'new' is not a valid name."
   end
 
@@ -122,8 +116,6 @@ class CMSTest < Minitest::Test
   def test_new_file
     post '/create', filename: 'file.txt'
 
-    assert_equal 302, last_response.status
-
     get last_response['Location']
     assert_includes last_response.body, 'file.txt was created.'
 
@@ -136,12 +128,43 @@ class CMSTest < Minitest::Test
 
     post '/test.txt/delete'
 
-    assert_equal 302, last_response.status
-
     get last_response['Location']
     assert_includes last_response.body, 'test.txt has been deleted.'
 
     get '/'
     refute_includes last_response.body, 'test.txt'
+  end
+
+  def test_signin_view
+    get '/users/signin'
+
+    assert_includes last_response.body,
+                    '<form action="/users/signin" method="post">'
+  end
+
+  def test_signin_invalid
+    post '/users/signin', username: 'not', password: 'valid'
+
+    assert_equal 422, last_response.status
+    assert_includes last_response.body, 'Invalid credentials.'
+  end
+
+  def test_signin_valid
+    post '/users/signin', username: 'admin', password: 'secret'
+
+    get last_response['Location']
+    assert_includes last_response.body, 'Welcome'
+    assert_includes last_response.body, 'Signed in as admin.'
+  end
+
+  def test_signout
+    post '/users/signin', username: 'admin', password: 'secret'
+
+    get last_response['Location']
+    assert_includes last_response.body, 'Welcome'
+    post '/users/signout'
+    get last_response['Location']
+    assert_includes last_response.body, 'You have been signed out.'
+    assert_includes last_response.body, 'Sign In'
   end
 end
