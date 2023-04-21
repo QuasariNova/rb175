@@ -1,10 +1,11 @@
 require 'yaml'
+require 'bcrypt'
 
 module Helpers
   def authenticate_user?(username, password)
     users = load_user_credentials
 
-    users.key?(username) && users[username] == password
+    users.key?(username) && BCrypt::Password.new(users[username]) == password
   end
 
   def config_path
