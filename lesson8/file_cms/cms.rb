@@ -3,6 +3,8 @@ require "sinatra/reloader"
 require "tilt/erubis"
 require "redcarpet"
 
+require_relative 'lib/helpers'
+
 # rubocop:disable Style::ExpandPathArguments
 def data_path
   if ENV["RACK_ENV"] == "test"
@@ -22,38 +24,14 @@ before do
   @files = Dir.each_child(data_path).to_a.sort
 end
 
+helpers Helpers
+
 get '/' do
   erb :index
 end
 
-def render_markdown(text)
-  markdown = Redcarpet::Markdown.new Redcarpet::Render::HTML
-  markdown.render text
-end
-
-def load_file_content(path)
-  content = File.read path
-  case File.extname path
-  when '.md'
-    erb render_markdown(content)
-  else
-    headers['Content-Type'] = 'text/plain'
-    content
-  end
-end
-
-def validate_filename
-  filename = params[:filename]
-  filepath = File.join data_path, filename
-
-  unless File.exist? filepath
-    session[:message] = "#{filename} does not exist."
-    redirect '/'
-  end
-  filename
-end
-
 get '/new' do
+  require_signed_in_user
   erb :new
 end
 
@@ -65,12 +43,14 @@ end
 
 get '/:filename/edit' do
   filename = validate_filename
+  require_signed_in_user
 
   @content = File.read "#{data_path}/#{filename}"
   erb :edit
 end
 
 post '/create' do
+  require_signed_in_user
   filename = params[:filename].strip
 
   case filename
@@ -91,6 +71,7 @@ end
 
 post '/:filename' do
   filename = params[:filename]
+  require_signed_in_user
 
   content = params[:content]
   File.write "#{data_path}/#{filename}", content
@@ -100,6 +81,8 @@ end
 
 post '/:filename/delete' do
   filename = validate_filename
+  require_signed_in_user
+
   FileUtils.remove_file File.join data_path, filename
   session[:message] = "#{filename} has been deleted."
   redirect '/'

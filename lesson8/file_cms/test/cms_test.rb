@@ -8,6 +8,10 @@ require_relative '../cms'
 class CMSTest < Minitest::Test
   include Rack::Test::Methods
 
+  def admin_session
+    {"rack.session" => { username: "admin" }}
+  end
+
   def app
     Sinatra::Application
   end
@@ -68,14 +72,22 @@ class CMSTest < Minitest::Test
 
   def test_edit_view
     create_document 'changes.txt'
-    get '/changes.txt/edit'
+    get '/changes.txt/edit', {}, admin_session
 
     assert_equal 200, last_response.status
     assert_includes last_response.body, '<textarea'
   end
 
+  def test_edit_view_signed_out
+    create_document 'changes.txt'
+    get '/changes.txt/edit'
+
+    assert_equal 302, last_response.status
+    assert_equal 'You must be signed in to do that.', session[:message]
+  end
+
   def test_modify
-    post '/changes.txt', content: "File has changed"
+    post '/changes.txt', { content: "File has changed" }, admin_session
 
     assert_equal 302, last_response.status
     assert_equal 'changes.txt has been updated.', session[:message]
@@ -85,35 +97,49 @@ class CMSTest < Minitest::Test
     assert_includes last_response.body, 'File has changed'
   end
 
+  def test_modify_signed_out
+    post '/changes.txt', { content: "File has changed" }
+
+    assert_equal 302, last_response.status
+    assert_equal 'You must be signed in to do that.', session[:message]
+  end
+
   def test_new_view
-    get '/new'
+    get '/new', {}, admin_session
 
     assert_equal 200, last_response.status
     assert_includes last_response.body, '<form action="/create" method="post">'
   end
 
+  def test_new_view_signed_out
+    get '/new'
+    assert_equal 302, last_response.status
+    assert_equal 'You must be signed in to do that.', session[:message]
+  end
+
   def test_new_no_filename
-    post '/create', {filename: '   '}
+    post '/create', { filename: '   ' }, admin_session
 
     assert_equal 422, last_response.status
     assert_includes last_response.body, 'A name is required.'
   end
 
   def test_new_new_filename
-    post '/create', filename: 'new'
+    post '/create', { filename: 'new' }, admin_session
 
+    assert_equal 422, last_response.status
     assert_includes last_response.body, "'new' is not a valid name."
   end
 
   def test_new_create_filename
-    post '/create', filename: 'create'
+    post '/create', { filename: 'create' }, admin_session
 
-    assert_equal 200, last_response.status
+    assert_equal 422, last_response.status
     assert_includes last_response.body, "'create' is not a valid name."
   end
 
   def test_new_file
-    post '/create', filename: 'file.txt'
+    post '/create', { filename: 'file.txt' }, admin_session
 
     get last_response['Location']
     assert_includes last_response.body, 'file.txt was created.'
@@ -122,16 +148,32 @@ class CMSTest < Minitest::Test
     assert_includes last_response.body, 'file.txt'
   end
 
+  def test_new_file_signed_out
+    post '/create', { filename: 'file.txt' }
+
+    assert_equal 302, last_response.status
+    assert_equal 'You must be signed in to do that.', session[:message]
+  end
+
   def test_delete
     create_document 'test.txt'
 
-    post '/test.txt/delete'
+    post '/test.txt/delete', {}, admin_session
 
-    get last_response['Location']
     assert_equal 'test.txt has been deleted.', session[:message]
 
+    get last_response['Location']
     get '/'
     refute_includes last_response.body, 'test.txt'
+  end
+
+  def test_delete_signed_out
+    create_document 'test.txt'
+
+    post 'test.txt/delete'
+
+    assert_equal 302, last_response.status
+    assert_equal 'You must be signed in to do that.', session[:message]
   end
 
   def test_signin_view
