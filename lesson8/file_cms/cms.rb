@@ -85,6 +85,7 @@ post '/create' do
     session[:message] = "#{filename} was created."
     redirect '/'
   end
+  status 422
   erb :new
 end
 
@@ -120,7 +121,7 @@ post '/users/signin' do
     return erb :signin
   end
 
-  session[:message] = 'Welcome'
+  session[:message] = 'Welcome!'
   session[:username] = @username
   redirect '/'
 end

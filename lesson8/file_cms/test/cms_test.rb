@@ -12,18 +12,22 @@ class CMSTest < Minitest::Test
     Sinatra::Application
   end
 
+  def create_document(name, content = "")
+    File.open File.join(data_path, name), 'w' do |file|
+      file.write content
+    end
+  end
+
+  def session
+    last_request.env["rack.session"]
+  end
+
   def setup
     FileUtils.mkdir_p(data_path)
   end
 
   def teardown
     FileUtils.rm_rf(data_path)
-  end
-
-  def create_document(name, content = "")
-    File.open File.join(data_path, name), 'w' do |file|
-      file.write content
-    end
   end
 
   def test_index_view
@@ -37,7 +41,7 @@ class CMSTest < Minitest::Test
     assert_includes last_response.body, "changes.txt"
   end
 
-  def test_files
+  def test_document_view
     create_document 'changes.txt', 'I am change'
 
     get '/changes.txt'
@@ -47,10 +51,11 @@ class CMSTest < Minitest::Test
     assert_includes last_response.body, 'I am change'
   end
 
-  def test_markdown
+  def test_markdown_view
     create_document 'about.md', '# Ruby is...'
     get '/about.md'
 
+    assert_equal 200, last_response.status
     assert_equal 'text/html;charset=utf-8', last_response['Content-Type']
     assert_includes last_response.body, '<h1>Ruby is...</h1>'
   end
@@ -58,19 +63,14 @@ class CMSTest < Minitest::Test
   def test_no_file
     get '/no-file'
     assert_equal 302, last_response.status
-
-    path = last_response['Location']
-    get path
-    assert_includes last_response.body, 'no-file does not exist.'
-
-    get path
-    refute_includes last_response.body, 'no-file does not exist.'
+    assert_equal 'no-file does not exist.', session[:message]
   end
 
   def test_edit_view
     create_document 'changes.txt'
     get '/changes.txt/edit'
 
+    assert_equal 200, last_response.status
     assert_includes last_response.body, '<textarea'
   end
 
@@ -78,9 +78,7 @@ class CMSTest < Minitest::Test
     post '/changes.txt', content: "File has changed"
 
     assert_equal 302, last_response.status
-
-    get last_response['Location']
-    assert_includes last_response.body, 'changes.txt has been updated.'
+    assert_equal 'changes.txt has been updated.', session[:message]
 
     get '/changes.txt'
     assert_equal 200, last_response.status
@@ -90,13 +88,14 @@ class CMSTest < Minitest::Test
   def test_new_view
     get '/new'
 
+    assert_equal 200, last_response.status
     assert_includes last_response.body, '<form action="/create" method="post">'
   end
 
   def test_new_no_filename
-    post '/create', filename: '   '
+    post '/create', {filename: '   '}
 
-    assert_equal 'text/html;charset=utf-8', last_response['Content-Type']
+    assert_equal 422, last_response.status
     assert_includes last_response.body, 'A name is required.'
   end
 
@@ -129,7 +128,7 @@ class CMSTest < Minitest::Test
     post '/test.txt/delete'
 
     get last_response['Location']
-    assert_includes last_response.body, 'test.txt has been deleted.'
+    assert_equal 'test.txt has been deleted.', session[:message]
 
     get '/'
     refute_includes last_response.body, 'test.txt'
@@ -152,19 +151,22 @@ class CMSTest < Minitest::Test
   def test_signin_valid
     post '/users/signin', username: 'admin', password: 'secret'
 
+    assert_equal 'Welcome!', session[:message]
+    assert_equal 'admin', session[:username]
+
     get last_response['Location']
-    assert_includes last_response.body, 'Welcome'
     assert_includes last_response.body, 'Signed in as admin.'
   end
 
   def test_signout
-    post '/users/signin', username: 'admin', password: 'secret'
+    get '/', {}, {"rack.session" => {username: "admin"}}
+    assert_includes last_response.body, 'Signed in as admin.'
+
+    post '/users/signout'
+    assert_equal 'You have been signed out.', session[:message]
 
     get last_response['Location']
-    assert_includes last_response.body, 'Welcome'
-    post '/users/signout'
-    get last_response['Location']
-    assert_includes last_response.body, 'You have been signed out.'
+    assert_nil session[:username]
     assert_includes last_response.body, 'Sign In'
   end
 end
