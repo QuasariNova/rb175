@@ -1,0 +1,10 @@
+    <form action="/create" method="post">
+      <dl>
+        <dt>
+          <label for="filename">Add a new document:</label>
+        </dt>
+        <dd>
+          <input name="filename" id="filename" type="text" value="<%= params[:filename] || '' %>" placeholder="File name">
+          <input type="submit" value="create">
+        </dd>
+      </dl>

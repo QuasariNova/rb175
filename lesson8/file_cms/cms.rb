@@ -34,11 +34,11 @@ end
 def load_file_content(path)
   content = File.read path
   case File.extname path
-  when '.txt'
-    headers['Content-Type'] = 'text/plain'
-    content
   when '.md'
     erb render_markdown(content)
+  else
+    headers['Content-Type'] = 'text/plain'
+    content
   end
 end
 
@@ -49,6 +49,10 @@ def validate_filename
     redirect '/'
   end
   filename
+end
+
+get '/new' do
+  erb :new
 end
 
 get '/:filename' do
@@ -62,6 +66,24 @@ get '/:filename/edit' do
 
   @content = File.read "#{data_path}/#{filename}"
   erb :edit
+end
+
+post '/create' do
+  filename = params[:filename].strip
+
+  case filename
+  when ''
+    session[:message] = 'A name is required.'
+  when 'new'
+    session[:message] = "'new' is not a valid name."
+  when 'create'
+    session[:message] = "'create' is not a valid name."
+  else
+    File.write "#{data_path}/#{filename}", ''
+    session[:message] = "#{filename} was created."
+    redirect '/'
+  end
+  erb :new
 end
 
 post '/:filename' do
