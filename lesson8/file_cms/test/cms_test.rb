@@ -130,4 +130,18 @@ class CMSTest < Minitest::Test
     get '/'
     assert_includes last_response.body, 'file.txt'
   end
+
+  def test_delete
+    create_document 'test.txt'
+
+    post '/test.txt/delete'
+
+    assert_equal 302, last_response.status
+
+    get last_response['Location']
+    assert_includes last_response.body, 'test.txt has been deleted.'
+
+    get '/'
+    refute_includes last_response.body, 'test.txt'
+  end
 end

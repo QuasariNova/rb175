@@ -44,7 +44,9 @@ end
 
 def validate_filename
   filename = params[:filename]
-  unless @files.include? filename
+  filepath = File.join data_path, filename
+
+  unless File.exist? filepath
     session[:message] = "#{filename} does not exist."
     redirect '/'
   end
@@ -92,5 +94,12 @@ post '/:filename' do
   content = params[:content]
   File.write "#{data_path}/#{filename}", content
   session[:message] = "#{filename} has been updated."
+  redirect '/'
+end
+
+post '/:filename/delete' do
+  filename = validate_filename
+  FileUtils.remove_file File.join data_path, filename
+  session[:message] = "#{filename} has been deleted."
   redirect '/'
 end

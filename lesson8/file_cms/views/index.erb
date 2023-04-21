@@ -1,8 +1,11 @@
     <ul>
     <% @files.each do |file| %>
       <li>
-        <a href="<%= "/#{file}" %>"><%= file %></a>
-        <a href="<%= "/#{file}/edit" %>">Edit</a>
+        <form action="<%= "/#{file}/delete" %>" method="post">
+          <a href="<%= "/#{file}" %>"><%= file %></a>
+          <a href="<%= "/#{file}/edit" %>">Edit</a>
+          <input type="submit" value="delete">
+        </form>
       </li>
     <% end %>
     </ul>
