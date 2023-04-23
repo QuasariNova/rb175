@@ -3,7 +3,7 @@ require "sinatra/reloader"
 require "tilt/erubis"
 require "redcarpet"
 
-require_relative 'lib/helpers'
+require_relative 'libs/sinatra/cms_helpers'
 
 def data_path
   if ENV["RACK_ENV"] == "test"
@@ -21,8 +21,6 @@ end
 before do
   @files = Dir.each_child(data_path).to_a.sort
 end
-
-helpers Helpers
 
 get '/' do
   erb :index
